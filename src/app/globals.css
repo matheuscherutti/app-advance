@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
+  --background: #fafbfc;
   --foreground: #0f172a;
-  --primary: #2563eb;
+  --primary: #00129a; /* Deep Navy from Advance logo */
+  --primary-hover: #000e78;
+  --accent-gold: #fca311; /* Gold/Orange from Advance logo */
   --primary-foreground: #ffffff;
   --card: #ffffff;
   --card-foreground: #0f172a;
@@ -14,6 +16,8 @@
 
 @theme {
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent-gold: var(--accent-gold);
   --color-background-app: var(--background);
 }
 
@@ -24,17 +28,24 @@ body {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 1rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: 0 4px 18px -4px rgba(0, 18, 154, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 18, 154, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  transform: translateY(-2px);
 }
 
 .btn-primary {
-  @apply px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 flex items-center justify-center gap-2;
+  @apply px-4 py-2.5 bg-[var(--primary)] text-white rounded-lg font-semibold hover:bg-[var(--primary-hover)] transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-indigo-900/10 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer;
 }
 
 .input-field {
-  @apply w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm;
+  @apply w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm;
 }
+
