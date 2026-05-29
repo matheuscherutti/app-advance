@@ -77,24 +77,30 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
         }
     };
 
-    const handlePrint = async () => {
-        try {
-            const modalityName = modalities.find(m => m.id === formData.modality)?.name || formData.modality;
-            const formattedValue = formatCurrency(formData.value);
-
-            await addDoc(collection(db, "terminations"), {
-                name: formData.name,
-                modality: modalityName,
-                date: formatDateStr(formData.terminationDate),
-                paymentDate: calcData.adjustedPaymentDate,
-                value: formattedValue,
-                status: "Aguardando pagamento",
-                createdAt: Date.now(),
-            });
-        } catch (error) {
-            console.error("Erro ao salvar no Firestore: ", error);
-        }
+    const handlePrint = () => {
+        // Abre o diálogo de impressão de forma síncrona para garantir que o navegador não bloqueie a ação
         window.print();
+
+        // Salva os dados no Firestore em segundo plano (assíncrono)
+        const saveToDb = async () => {
+            try {
+                const modalityName = modalities.find(m => m.id === formData.modality)?.name || formData.modality;
+                const formattedValue = formatCurrency(formData.value);
+
+                await addDoc(collection(db, "terminations"), {
+                    name: formData.name,
+                    modality: modalityName,
+                    date: formatDateStr(formData.terminationDate),
+                    paymentDate: calcData.adjustedPaymentDate,
+                    value: formattedValue,
+                    status: "Aguardando pagamento",
+                    createdAt: Date.now(),
+                });
+            } catch (error) {
+                console.error("Erro ao salvar no Firestore: ", error);
+            }
+        };
+        saveToDb();
     };
 
     const formatDateStr = (dateStr: string) => {
