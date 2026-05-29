@@ -2,6 +2,7 @@ import { db } from "@/lib/firebase";
 import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 
 interface TerminationListProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     terminations: any[];
 }
 

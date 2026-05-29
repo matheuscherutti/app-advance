@@ -9,6 +9,7 @@ import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [terminations, setTerminations] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState({
@@ -22,6 +23,7 @@ export default function Home() {
   useEffect(() => {
     const q = query(collection(db, "terminations"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const list: any[] = [];
       snapshot.forEach((doc) => {
         list.push({ id: doc.id, ...doc.data() });

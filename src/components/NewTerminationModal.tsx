@@ -55,6 +55,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
     const [calcData, setCalcData] = useState({
         originalPaymentDate: "-",
         adjustedPaymentDate: "-",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rules: {} as any
     });
 
@@ -74,7 +75,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
             date.setDate(date.getDate() + 9);
 
             const original = new Date(date);
-            let adjusted = new Date(date);
+            const adjusted = new Date(date);
 
             // Sunday (0) -> Friday (-2), Saturday (6) -> Friday (-1)
             if (adjusted.getDay() === 0) adjusted.setDate(adjusted.getDate() - 2);
@@ -93,6 +94,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                 return `${dd}/${mm}/${yyyy}`;
             };
 
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCalcData(prev => ({
                 ...prev,
                 originalPaymentDate: format(original),
@@ -158,6 +160,10 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
 
                                 canvas.width = viewport.width;
                                 canvas.height = viewport.height;
+
+                                // Garantir fundo branco para evitar transparência/sobreposição
+                                context.fillStyle = "#ffffff";
+                                context.fillRect(0, 0, canvas.width, canvas.height);
 
                                 await page.render({
                                     canvasContext: context,
@@ -486,7 +492,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
             {/* HIGH FIDELITY PRINT TEMPLATE (Hidden from screen, visible in print) */}
             <div className="hidden print:block font-sans text-slate-900 bg-[#fafaf9]">
                 {/* PAGE 1: ROADMAP */}
-                <div className="print:w-screen print:h-screen print:relative print:overflow-hidden print:flex print:flex-col print:justify-between relative w-full h-screen flex flex-col justify-between" style={{ breakAfter: "page", pageBreakAfter: "always" }}>
+                <div className="print:w-full print:h-screen print:relative print:overflow-hidden print:flex print:flex-col print:justify-between relative w-full h-screen flex flex-col justify-between" style={{ breakAfter: "page", pageBreakAfter: "always" }}>
                     {/* Visual Artifacts */}
                     <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-gradient-to-b from-[#8b5a2b] via-[#5c3d2e] to-[#8b5a2b] z-20" />
 
@@ -659,13 +665,13 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                     {!isFgtsExcluded && (
                                         <p className="text-[#8b5a2b] font-bold flex items-center gap-1.5 justify-center">
                                             <svg className="w-4 h-4 flex-shrink-0 text-[#8b5a2b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                            Saque FGTS: no App "FGTS CAIXA"
+                                            Saque FGTS: no App &quot;FGTS CAIXA&quot;
                                         </p>
                                     )}
                                     {hasSeguroDesemprego && (
                                         <p className="text-[#8b5a2b] font-bold flex items-center gap-1.5 justify-center">
                                             <svg className="w-4 h-4 flex-shrink-0 text-[#8b5a2b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-                                            Seguro-Desemprego: no App "Carteira de Trabalho Digital"
+                                            Seguro-Desemprego: no App &quot;Carteira de Trabalho Digital&quot;
                                         </p>
                                     )}
                                 </div>
@@ -683,7 +689,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                     file.pages.map((pageDataUrl, pageIdx) => (
                         <div
                             key={`${file.id}-${pageIdx}`}
-                            className="print:w-screen print:h-screen print:relative print:flex print:items-center print:justify-center print:overflow-hidden bg-white p-0"
+                            className="print:w-full print:h-screen print:relative print:flex print:items-center print:justify-center print:overflow-hidden bg-white p-0"
                             style={{ breakAfter: "page", pageBreakAfter: "always" }}
                         >
                             <img src={pageDataUrl} className="w-full h-full object-contain" alt={`${file.name} - Página ${pageIdx + 1}`} />

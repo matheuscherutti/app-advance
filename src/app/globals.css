@@ -49,3 +49,45 @@ body {
   @apply w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm;
 }
 
+@media print {
+  /* Reset html and body constraints to allow natural multi-page flow */
+  html, body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Reset main wrapper */
+  main {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Reset fixed modal overlay wrappers */
+  div.fixed,
+  .fixed,
+  [class*="fixed"] {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+
