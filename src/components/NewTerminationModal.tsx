@@ -419,10 +419,6 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Relatório analítico do cálculo de rescisão;</span>
-                                    </li>
-                                    <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                        <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
                                         <span>01 via – Termo de rescisão;</span>
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
@@ -453,7 +449,14 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             
                             <div className={`flex-1 ${!isFgtsExcluded ? "border-r border-slate-800/80 pr-4" : ""} last:border-0 last:pr-0`}>
                                 <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Valor Líquido a ser Pago</span>
-                                <div className="text-xl font-black text-[#dfb76c] mt-0.5 leading-none">{formatCurrency(formData.value)}</div>
+                                <div className="text-xl font-black text-[#dfb76c] mt-0.5 leading-none flex items-center flex-wrap">
+                                    <span>{formatCurrency(formData.value)}</span>
+                                    {(parseFloat(formData.value) === 0 || isNaN(parseFloat(formData.value)) || parseFloat(formData.value) < 0) && (
+                                        <span className="text-[10px] text-red-400 font-black uppercase tracking-wider ml-2">
+                                            - Não há valores a serem pagos para o funcionário
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             
                             {!isFgtsExcluded && (
