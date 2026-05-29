@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local sqlite databases
+rescisao.db
+*.db
+*.sqlite
+
+# user assets and raw media folders
+*.pdf
+*.jpg
+/imagem/
+
+# agent configs
+.agent/
+.venv/
