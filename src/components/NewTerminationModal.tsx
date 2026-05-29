@@ -95,7 +95,6 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
             console.error("Erro ao salvar no Firestore: ", error);
         }
         window.print();
-        onClose();
     };
 
     const formatDateStr = (dateStr: string) => {
