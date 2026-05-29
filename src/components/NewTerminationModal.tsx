@@ -77,6 +77,20 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
         }
     };
 
+    const hasSeguroDesemprego = [
+        "dispensa_aviso_indenizado",
+        "dispensa_aviso_trabalhado",
+        "rescisao_antecipada_experiencia_empregador"
+    ].includes(formData.modality);
+
+    const hasFgtsGuia = [
+        "dispensa_aviso_indenizado",
+        "dispensa_aviso_trabalhado",
+        "termino_experiencia",
+        "rescisao_antecipada_experiencia_empregador",
+        "acordo_partes"
+    ].includes(formData.modality);
+
     const handlePrint = () => {
         // Abre o diálogo de impressão de forma síncrona para garantir que o navegador não bloqueie a ação
         window.print();
@@ -123,6 +137,9 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
         { id: "pedido_demissao_desconto_aviso", name: "Pedido de demissão com desconto do aviso" },
         { id: "pedido_demissao_aviso_trabalhado", name: "Pedido de demissão com aviso trabalhado" },
         { id: "termino_experiencia", name: "Término de contrato de experiência" },
+        { id: "rescisao_antecipada_experiencia_empregado", name: "Rescisão antecipada do contrato de experiência a pedido do empregado" },
+        { id: "rescisao_antecipada_experiencia_empregador", name: "Rescisão antecipada do contrato de experiência pelo empregador" },
+        { id: "acordo_partes", name: "Acordo entre as partes" },
         { id: "justa_causa", name: "Dispensa por justa causa" },
     ];
 
@@ -184,7 +201,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-slate-700">Valor Multa 40% FGTS</label>
+                                <label className="block text-sm font-medium text-slate-700">Valor Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} FGTS</label>
                                 <input
                                     type="number"
                                     className="input-field"
@@ -310,7 +327,6 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                         </div>
 
                         <p className="mb-4 font-extrabold text-[11.5px] text-slate-800 uppercase tracking-wider">Fazer a impressão e distribuição das seguintes vias:</p>
-
                         {/* Lists */}
                         <div className="grid grid-cols-2 gap-6 mb-5">
                             <section className="bg-white p-5 rounded-xl border border-slate-200/50 shadow-sm relative overflow-hidden flex flex-col">
@@ -319,31 +335,35 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 <ul className="space-y-2 flex-1">
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Recibo de rescisão do contrato de trabalho;</span>
-                                    </li>
-                                    <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                        <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
                                         <span>01 via – Relatório analítico do cálculo de rescisão;</span>
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Termo de quitação de rescisão do contrato;</span>
+                                        <span>01 via – Termo de rescisão;</span>
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Extrato de conta do fundo de garantia – FGTS;</span>
+                                        <span>01 via – Termo de quitação;</span>
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Comprovante de pagamento das verbas (anexar na rescisão);</span>
+                                        <span>01 via – Extrato de FGTS;</span>
                                     </li>
+                                    {hasFgtsGuia && (
+                                        <>
+                                            <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                <span>01 via – Guia de recolhimento de FGTS;</span>
+                                            </li>
+                                            <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                <span>01 via – Detalhamento da guia FGTS;</span>
+                                            </li>
+                                        </>
+                                    )}
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Guia de recolhimento rescisório e detalhamento;</span>
-                                    </li>
-                                    <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                        <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Segunda página do seguro-desemprego (recortar protocolo).</span>
+                                        <span>01 via – Comprovante de pagamento das verbas (anexar na rescisão).</span>
                                     </li>
                                 </ul>
                             </section>
@@ -358,23 +378,29 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Recibo de rescisão do contrato de trabalho;</span>
+                                        <span>01 via – Relatório analítico do cálculo de rescisão;</span>
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Termo de quitação de rescisão do contrato;</span>
+                                        <span>01 via – Termo de rescisão;</span>
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Extrato de conta do fundo de garantia – FGTS;</span>
+                                        <span>01 via – Termo de quitação;</span>
                                     </li>
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>01 via – Comprovante de pagamento das verbas;</span>
+                                        <span>01 via – Extrato de FGTS;</span>
                                     </li>
+                                    {hasSeguroDesemprego && (
+                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                            <span>01 via – Requerimento seguro desemprego;</span>
+                                        </li>
+                                    )}
                                     <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                         <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                        <span>1 e ½ – Formulário do Seguro Desemprego.</span>
+                                        <span>01 via – Comprovante de pagamento das verbas.</span>
                                     </li>
                                 </ul>
                             </section>
@@ -390,7 +416,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             </div>
                             
                             <div className="flex-1 pl-4">
-                                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Multa 40% sobre o FGTS</span>
+                                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} sobre o FGTS</span>
                                 <div className="text-xl font-black text-[#dfb76c] mt-0.5 leading-none">{formatCurrency(formData.fgtsPenalty)}</div>
                                 {(formData.fgtsIncludesMonthPrior || formData.fgtsIncludesConsignment) && (
                                     <div className="text-[10px] mt-2 py-1 px-2.5 inline-block italic normal-case text-slate-900 font-bold bg-[#dfb76c] rounded border border-[#8b5a2b]/20">
