@@ -262,7 +262,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm print:p-0 print:bg-white print:backdrop-blur-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm print:relative print:block print:w-auto print:h-auto print:p-0 print:bg-white print:backdrop-blur-none">
             <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl flex flex-col md:flex-row print:hidden">
                 {/* Form Section */}
                 <div className="flex-1 p-8 border-r border-slate-100">
