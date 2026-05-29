@@ -11,6 +11,23 @@ const EXCLUDE_FGTS_MODALITIES = [
     "justa_causa"
 ];
 
+const getModalityWarningText = (modality: string) => {
+    switch (modality) {
+        case "pedido_demissao_desconto_aviso":
+        case "rescisao_antecipada_experiencia_empregado":
+        case "pedido_demissao_aviso_trabalhado":
+            return "PEDIDO DE DEMISSÃO NÃO DÁ DIREITO AO SAQUE DO FGTS E NÃO TERÁ DIREITO A RECEBER SEGURO-DESEMPREGO.";
+        case "rescisao_antecipada_experiencia_empregador":
+            return "SE O FUNCIONÁRIO OPTOU POR SAQUE ANIVERSÁRIO DO FGTS, NÃO TERÁ DIREITO AO SAQUE RESCISÃO, TERÁ DIREITO SOMENTE AO SAQUE DA MULTA DO FGTS.";
+        case "acordo_partes":
+            return "ACORDO ENTRE AS PARTES NÃO DÁ DIREITO A RECEBER SEGURO-DESEMPREGO E O SAQUE DE FGTS SERÁ DETERMINADO PELA CAIXA .";
+        case "justa_causa":
+            return "DISPENSA POR JUSTA CAUSA NÃO DÁ DIREITO AO SAQUE DO FGTS E NÃO TERÁ DIREITO A RECEBER SEGURO-DESEMPREGO.";
+        default:
+            return null;
+    }
+};
+
 interface ModalProps {
     onClose: () => void;
 }
@@ -458,9 +475,16 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
 
                     {/* Footer Instructions */}
                     <div className="space-y-5">
-                        <p className="text-[11px] text-slate-500 font-medium italic text-center">
-                            Orientamos que o pagamento seja feito através de Ordem de pagamento, transferência bancária, cheque administrativo ou Pix.
-                        </p>
+                        <div className="space-y-2">
+                            <p className="text-[11px] text-slate-500 font-medium italic text-center">
+                                Orientamos que o pagamento seja feito através de Ordem de pagamento, transferência bancária, cheque administrativo ou Pix.
+                            </p>
+                            {getModalityWarningText(formData.modality) && (
+                                <p className="text-[10.5px] text-[#991b1b] font-black text-center uppercase tracking-wide leading-relaxed">
+                                    {getModalityWarningText(formData.modality)}
+                                </p>
+                            )}
+                        </div>
 
                         {(hasSeguroDesemprego || !isFgtsExcluded) && (
                             <div className={`grid ${hasSeguroDesemprego && !isFgtsExcluded ? "grid-cols-2" : "grid-cols-1"} gap-3 text-[11px] bg-white p-3.5 rounded-xl border border-slate-200/50`}>
