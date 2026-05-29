@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 interface ModalProps {
     onClose: () => void;
@@ -75,8 +77,25 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
         }
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
+        try {
+            const modalityName = modalities.find(m => m.id === formData.modality)?.name || formData.modality;
+            const formattedValue = formatCurrency(formData.value);
+
+            await addDoc(collection(db, "terminations"), {
+                name: formData.name,
+                modality: modalityName,
+                date: formatDateStr(formData.terminationDate),
+                paymentDate: calcData.adjustedPaymentDate,
+                value: formattedValue,
+                status: "Aguardando pagamento",
+                createdAt: Date.now(),
+            });
+        } catch (error) {
+            console.error("Erro ao salvar no Firestore: ", error);
+        }
         window.print();
+        onClose();
     };
 
     const formatDateStr = (dateStr: string) => {

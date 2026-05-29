@@ -53,3 +53,5 @@ rescisao.db
 # agent configs
 .agent/
 .venv/
+
+.vercel

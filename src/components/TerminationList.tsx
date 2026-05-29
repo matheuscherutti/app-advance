@@ -1,11 +1,11 @@
-export default function TerminationList() {
-    const mockData = [
-        { id: 1, name: "João Silva", modality: "Dispensa sem Justa Causa", date: "20/05/2026", paymentDate: "29/05/2026", status: "Aguardando pagamento", value: "R$ 4.500,00" },
-        { id: 2, name: "Maria Oliveira", modality: "Pedido de Demissão", date: "18/05/2026", paymentDate: "28/05/2026", status: "Finalizada", value: "R$ 3.200,00" },
-        { id: 3, name: "Carlos Souza", modality: "Término de Experiência", date: "22/05/2026", paymentDate: "01/06/2026", status: "Em andamento", value: "R$ 2.800,00" },
-        { id: 4, name: "Ana Santos", modality: "Dispensa com Aviso Indenizado", date: "10/05/2026", paymentDate: "20/05/2026", status: "Atrasada", value: "R$ 7.100,00" },
-    ];
+import { db } from "@/lib/firebase";
+import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 
+interface TerminationListProps {
+    terminations: any[];
+}
+
+export default function TerminationList({ terminations }: TerminationListProps) {
     const getStatusColor = (status: string) => {
         switch (status) {
             case "Finalizada": return "bg-emerald-100 text-emerald-700";
@@ -14,6 +14,38 @@ export default function TerminationList() {
             default: return "bg-slate-100 text-slate-700";
         }
     };
+
+    const toggleStatus = async (id: string, currentStatus: string) => {
+        try {
+            const newStatus = currentStatus === "Finalizada" ? "Aguardando pagamento" : "Finalizada";
+            const docRef = doc(db, "terminations", id);
+            await updateDoc(docRef, { status: newStatus });
+        } catch (error) {
+            console.error("Erro ao atualizar status: ", error);
+        }
+    };
+
+    const deleteTermination = async (id: string) => {
+        try {
+            if (confirm("Deseja realmente excluir esta rescisão do histórico?")) {
+                const docRef = doc(db, "terminations", id);
+                await deleteDoc(docRef);
+            }
+        } catch (error) {
+            console.error("Erro ao excluir documento: ", error);
+        }
+    };
+
+    if (terminations.length === 0) {
+        return (
+            <div className="text-center py-12 text-slate-400">
+                <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Nenhuma rescisão cadastrada no histórico.
+            </div>
+        );
+    }
 
     return (
         <div className="overflow-x-auto">
@@ -30,7 +62,7 @@ export default function TerminationList() {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                    {mockData.map((item) => (
+                    {terminations.map((item) => (
                         <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
                             <td className="py-4 px-4 font-medium text-slate-900">{item.name}</td>
                             <td className="py-4 px-4 text-slate-600 text-sm">{item.modality}</td>
@@ -43,8 +75,17 @@ export default function TerminationList() {
                                 </span>
                             </td>
                             <td className="py-4 px-4 text-right">
-                                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                    Ver Detalhes
+                                <button
+                                    onClick={() => toggleStatus(item.id, item.status)}
+                                    className={`${item.status === "Finalizada" ? "text-slate-500 hover:text-slate-700" : "text-emerald-600 hover:text-emerald-800"} text-xs font-bold mr-3 opacity-0 group-hover:opacity-100 transition-opacity`}
+                                >
+                                    {item.status === "Finalizada" ? "Reabrir" : "Finalizar"}
+                                </button>
+                                <button
+                                    onClick={() => deleteTermination(item.id)}
+                                    className="text-rose-600 hover:text-rose-800 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    Excluir
                                 </button>
                             </td>
                         </tr>

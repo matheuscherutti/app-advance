@@ -4,16 +4,46 @@ import { useState, useEffect } from "react";
 import DashboardStats from "@/components/DashboardStats";
 import TerminationList from "@/components/TerminationList";
 import NewTerminationModal from "@/components/NewTerminationModal";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [terminations, setTerminations] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState({
-    total: 12,
-    pending: 4,
-    finalized: 6,
-    delayed: 2,
-    upcoming: 3
+    total: 0,
+    pending: 0,
+    finalized: 0,
+    delayed: 0,
+    upcoming: 0
   });
+
+  useEffect(() => {
+    const q = query(collection(db, "terminations"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      setTerminations(list);
+
+      // Calcular estatísticas com base nos dados do Firestore
+      const total = list.length;
+      const pending = list.filter(t => t.status === "Aguardando pagamento" || t.status === "Em andamento").length;
+      const finalized = list.filter(t => t.status === "Finalizada").length;
+      const delayed = list.filter(t => t.status === "Atrasada").length;
+      const upcoming = list.filter(t => t.status === "Aguardando pagamento").length;
+
+      setStats({ total, pending, finalized, delayed, upcoming });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const filteredTerminations = terminations.filter(t => 
+    t.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <main className="min-h-screen bg-[#f8fafc] p-6 lg:p-12">
@@ -48,11 +78,13 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="Pesquisar funcionário..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
-            <TerminationList />
+            <TerminationList terminations={filteredTerminations} />
           </div>
         </div>
       </div>
