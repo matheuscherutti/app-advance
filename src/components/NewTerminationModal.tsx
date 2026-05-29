@@ -4,6 +4,13 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 
+const EXCLUDE_FGTS_MODALITIES = [
+    "pedido_demissao_desconto_aviso",
+    "rescisao_antecipada_experiencia_empregado",
+    "pedido_demissao_aviso_trabalhado",
+    "justa_causa"
+];
+
 interface ModalProps {
     onClose: () => void;
 }
@@ -27,6 +34,8 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
         adjustedPaymentDate: "-",
         rules: {} as any
     });
+
+    const isFgtsExcluded = EXCLUDE_FGTS_MODALITIES.includes(formData.modality);
 
     // Calculate dates when termination date changes
     useEffect(() => {
@@ -173,7 +182,17 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 <select
                                     className="input-field"
                                     value={formData.modality}
-                                    onChange={(e) => setFormData({ ...formData, modality: e.target.value })}
+                                    onChange={(e) => {
+                                        const nextModality = e.target.value;
+                                        const excludeFgts = EXCLUDE_FGTS_MODALITIES.includes(nextModality);
+                                        setFormData({
+                                            ...formData,
+                                            modality: nextModality,
+                                            fgtsPenalty: "0",
+                                            fgtsIncludesMonthPrior: excludeFgts ? false : formData.fgtsIncludesMonthPrior,
+                                            fgtsIncludesConsignment: excludeFgts ? false : formData.fgtsIncludesConsignment
+                                        });
+                                    }}
                                 >
                                     {modalities.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                 </select>
@@ -204,26 +223,29 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 <label className="block text-sm font-medium text-slate-700">Valor Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} FGTS</label>
                                 <input
                                     type="number"
-                                    className="input-field"
+                                    className="input-field disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                     placeholder="R$ 0,00"
-                                    value={formData.fgtsPenalty}
+                                    value={isFgtsExcluded ? "0" : formData.fgtsPenalty}
+                                    disabled={isFgtsExcluded}
                                     onChange={(e) => setFormData({ ...formData, fgtsPenalty: e.target.value })}
                                 />
                                 <div className="flex gap-4 mt-2">
-                                    <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 cursor-pointer">
+                                    <label className={`flex items-center gap-2 text-[11px] font-medium text-slate-600 ${isFgtsExcluded ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
                                         <input
                                             type="checkbox"
-                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                            checked={formData.fgtsIncludesMonthPrior}
+                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                                            checked={!isFgtsExcluded && formData.fgtsIncludesMonthPrior}
+                                            disabled={isFgtsExcluded}
                                             onChange={(e) => setFormData({ ...formData, fgtsIncludesMonthPrior: e.target.checked })}
                                         />
                                         FGTS Mês Anterior
                                     </label>
-                                    <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 cursor-pointer">
+                                    <label className={`flex items-center gap-2 text-[11px] font-medium text-slate-600 ${isFgtsExcluded ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
                                         <input
                                             type="checkbox"
-                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                            checked={formData.fgtsIncludesConsignment}
+                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                                            checked={!isFgtsExcluded && formData.fgtsIncludesConsignment}
+                                            disabled={isFgtsExcluded}
                                             onChange={(e) => setFormData({ ...formData, fgtsIncludesConsignment: e.target.checked })}
                                         />
                                         Parcela Consignado
@@ -262,10 +284,12 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                     <span>Líquido:</span>
                                     <span className="font-bold text-rose-600">{formatCurrency(formData.value)}</span>
                                 </div>
-                                <div className="flex justify-between text-slate-600">
-                                    <span>Multa FGTS:</span>
-                                    <span className="font-bold text-rose-600">{formatCurrency(formData.fgtsPenalty)}</span>
-                                </div>
+                                {!isFgtsExcluded && (
+                                    <div className="flex justify-between text-slate-600">
+                                        <span>Multa FGTS:</span>
+                                        <span className="font-bold text-rose-600">{formatCurrency(formData.fgtsPenalty)}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -410,23 +434,25 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                         <div className="bg-gradient-to-r from-[#121824] to-[#1a202c] text-white p-5 rounded-xl border border-[#8b5a2b]/35 shadow-md flex justify-between gap-4 mb-5 relative overflow-hidden">
                             <div className="absolute right-0 top-0 w-32 h-32 bg-[#8b5a2b]/5 rounded-full blur-2xl pointer-events-none" />
                             
-                            <div className="flex-1 border-r border-slate-800/80 pr-4 last:border-0 last:pr-0">
+                            <div className={`flex-1 ${!isFgtsExcluded ? "border-r border-slate-800/80 pr-4" : ""} last:border-0 last:pr-0`}>
                                 <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Valor Líquido a ser Pago</span>
                                 <div className="text-xl font-black text-[#dfb76c] mt-0.5 leading-none">{formatCurrency(formData.value)}</div>
                             </div>
                             
-                            <div className="flex-1 pl-4">
-                                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} sobre o FGTS</span>
-                                <div className="text-xl font-black text-[#dfb76c] mt-0.5 leading-none">{formatCurrency(formData.fgtsPenalty)}</div>
-                                {(formData.fgtsIncludesMonthPrior || formData.fgtsIncludesConsignment) && (
-                                    <div className="text-[10px] mt-2 py-1 px-2.5 inline-block italic normal-case text-slate-900 font-bold bg-[#dfb76c] rounded border border-[#8b5a2b]/20">
-                                        está incluso: {[
-                                            formData.fgtsIncludesMonthPrior && "FGTS mês anterior",
-                                            formData.fgtsIncludesConsignment && "Parcela do consignado"
-                                        ].filter(Boolean).join(" + ")}
-                                    </div>
-                                )}
-                            </div>
+                            {!isFgtsExcluded && (
+                                <div className="flex-1 pl-4">
+                                    <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} sobre o FGTS</span>
+                                    <div className="text-xl font-black text-[#dfb76c] mt-0.5 leading-none">{formatCurrency(formData.fgtsPenalty)}</div>
+                                    {(formData.fgtsIncludesMonthPrior || formData.fgtsIncludesConsignment) && (
+                                        <div className="text-[10px] mt-2 py-1 px-2.5 inline-block italic normal-case text-slate-900 font-bold bg-[#dfb76c] rounded border border-[#8b5a2b]/20">
+                                            está incluso: {[
+                                                formData.fgtsIncludesMonthPrior && "FGTS mês anterior",
+                                                formData.fgtsIncludesConsignment && "Parcela do consignado"
+                                            ].filter(Boolean).join(" + ")}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -436,16 +462,22 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             Orientamos que o pagamento seja feito através de Ordem de pagamento, transferência bancária, cheque administrativo ou Pix.
                         </p>
 
-                        <div className="grid grid-cols-2 gap-3 text-[11px] bg-white p-3.5 rounded-xl border border-slate-200/50">
-                            <p className="text-[#8b5a2b] font-bold flex items-center gap-1.5 justify-center">
-                                <svg className="w-4 h-4 flex-shrink-0 text-[#8b5a2b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                Saque FGTS: no App "FGTS CAIXA"
-                            </p>
-                            <p className="text-[#8b5a2b] font-bold flex items-center gap-1.5 justify-center">
-                                <svg className="w-4 h-4 flex-shrink-0 text-[#8b5a2b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-                                Seguro-Desemprego: no App "Carteira de Trabalho Digital"
-                            </p>
-                        </div>
+                        {(hasSeguroDesemprego || !isFgtsExcluded) && (
+                            <div className={`grid ${hasSeguroDesemprego && !isFgtsExcluded ? "grid-cols-2" : "grid-cols-1"} gap-3 text-[11px] bg-white p-3.5 rounded-xl border border-slate-200/50`}>
+                                {!isFgtsExcluded && (
+                                    <p className="text-[#8b5a2b] font-bold flex items-center gap-1.5 justify-center">
+                                        <svg className="w-4 h-4 flex-shrink-0 text-[#8b5a2b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        Saque FGTS: no App "FGTS CAIXA"
+                                    </p>
+                                )}
+                                {hasSeguroDesemprego && (
+                                    <p className="text-[#8b5a2b] font-bold flex items-center gap-1.5 justify-center">
+                                        <svg className="w-4 h-4 flex-shrink-0 text-[#8b5a2b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                                        Seguro-Desemprego: no App "Carteira de Trabalho Digital"
+                                    </p>
+                                )}
+                            </div>
+                        )}
 
                         <div className="bg-amber-50/80 p-3 text-center text-[10.5px] font-black uppercase text-[#991b1b] border border-red-200/60 rounded-xl">
                             ATENÇÃO: O PAGAMENTO DA RESCISÃO FORA DO PRAZO ACARRETARÁ EM MULTA DE UM SALÁRIO DO COLABORADOR.
