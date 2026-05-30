@@ -291,27 +291,28 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             />
                         </div>
 
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Modalidade</label>
+                            <select
+                                className="input-field"
+                                value={formData.modality}
+                                onChange={(e) => {
+                                    const nextModality = e.target.value;
+                                    const excludeFgts = EXCLUDE_FGTS_MODALITIES.includes(nextModality);
+                                    setFormData({
+                                        ...formData,
+                                        modality: nextModality,
+                                        fgtsPenalty: "0",
+                                        fgtsIncludesMonthPrior: excludeFgts ? false : formData.fgtsIncludesMonthPrior,
+                                        fgtsIncludesConsignment: excludeFgts ? false : formData.fgtsIncludesConsignment
+                                    });
+                                }}
+                            >
+                                {modalities.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Modalidade</label>
-                                <select
-                                    className="input-field"
-                                    value={formData.modality}
-                                    onChange={(e) => {
-                                        const nextModality = e.target.value;
-                                        const excludeFgts = EXCLUDE_FGTS_MODALITIES.includes(nextModality);
-                                        setFormData({
-                                            ...formData,
-                                            modality: nextModality,
-                                            fgtsPenalty: "0",
-                                            fgtsIncludesMonthPrior: excludeFgts ? false : formData.fgtsIncludesMonthPrior,
-                                            fgtsIncludesConsignment: excludeFgts ? false : formData.fgtsIncludesConsignment
-                                        });
-                                    }}
-                                >
-                                    {modalities.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                </select>
-                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Data do Desligamento</label>
                                 <input
