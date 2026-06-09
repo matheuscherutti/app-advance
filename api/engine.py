@@ -62,6 +62,14 @@ def get_termination_rules(modality: str):
             "documents_company": ["Analítico da rescisão", "Termo de rescisão", "Termo de quitação", "Extrato FGTS", "Comprovante pagamento"],
             "documents_employee": ["Analítico da rescisão", "Termo de rescisão", "Termo de quitação", "Carta referência", "Extrato FGTS", "Comprovante pagamento"]
         },
+        "pedido_demissao_sem_desconto_aviso": {
+            "fgts": False,
+            "multa_fgts": 0,
+            "seguro_desemprego": False,
+            "guia_fgts": False,
+            "documents_company": ["Analítico da rescisão", "Termo de rescisão", "Termo de quitação", "Extrato FGTS", "Comprovante pagamento"],
+            "documents_employee": ["Analítico da rescisão", "Termo de rescisão", "Termo de quitação", "Carta referência", "Extrato FGTS", "Comprovante pagamento"]
+        },
         "pedido_demissao_aviso_trabalhado": {
             "fgts": False,
             "multa_fgts": 0,

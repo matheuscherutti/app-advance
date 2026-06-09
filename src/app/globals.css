@@ -50,6 +50,10 @@ body {
 }
 
 @media print {
+  @page {
+    margin: 0;
+  }
+
   /* Reset html and body constraints to allow natural multi-page flow */
   html, body {
     height: auto !important;

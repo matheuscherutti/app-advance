@@ -57,7 +57,7 @@ export default function Home() {
           <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--accent-gold)]" />
           
           <div className="flex items-center gap-4">
-            <img src="/logo_advance.jpg" alt="Advance Contabilidade" className="h-12 w-auto object-contain" />
+            <img src="/logo_novo.jpg" alt="Advance Contabilidade" className="h-12 w-auto object-contain" />
             <div className="h-10 w-px bg-slate-200 hidden sm:block" />
             <div>
               <h1 className="text-xl font-black text-slate-800 tracking-tight">Painel de Controle</h1>
