@@ -61,11 +61,13 @@ interface SortableFileItemProps {
     file: AttachedFile;
     idx: number;
     totalFiles: number;
+    selectedFileId: string | null;
+    setSelectedFileId: (id: string | null) => void;
     moveFile: (index: number, direction: "up" | "down") => void;
     removeFile: (id: string) => void;
 }
 
-function SortableFileItem({ file, idx, totalFiles, moveFile, removeFile }: SortableFileItemProps) {
+function SortableFileItem({ file, idx, totalFiles, selectedFileId, setSelectedFileId, moveFile, removeFile }: SortableFileItemProps) {
     const {
         attributes,
         listeners,
@@ -87,7 +89,7 @@ function SortableFileItem({ file, idx, totalFiles, moveFile, removeFile }: Sorta
         <div
             ref={setNodeRef}
             style={style}
-            className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-slate-200 transition-all"
+            className={`flex items-center justify-between p-3 bg-white border rounded-xl shadow-sm hover:border-slate-200 transition-all ${selectedFileId === file.id ? 'border-blue-200 bg-blue-50/20' : 'border-slate-100'}`}
         >
             <div className="flex items-center gap-3 overflow-hidden flex-1">
                 {/* Drag Handle */}
@@ -102,11 +104,23 @@ function SortableFileItem({ file, idx, totalFiles, moveFile, removeFile }: Sorta
                     </svg>
                 </div>
 
-                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0 font-bold text-[9px] uppercase">
-                    PDF
+                <div 
+                    className="w-8 h-10 rounded border border-slate-200 bg-slate-50 overflow-hidden flex-shrink-0 flex items-center justify-center shadow-sm relative cursor-pointer"
+                    onClick={() => setSelectedFileId(file.id)}
+                    title="Clique para visualizar"
+                >
+                    {file.pages.length > 0 ? (
+                        <img src={file.pages[0]} className="w-full h-full object-cover" alt="Thumb" />
+                    ) : (
+                        <span className="text-rose-600 font-bold text-[8px] uppercase">PDF</span>
+                    )}
                 </div>
-                <div className="overflow-hidden">
-                    <p className="text-xs font-bold text-slate-800 truncate" title={file.name}>
+                <div 
+                    className="overflow-hidden cursor-pointer flex-1"
+                    onClick={() => setSelectedFileId(file.id)}
+                    title="Clique para visualizar"
+                >
+                    <p className={`text-xs font-bold truncate ${selectedFileId === file.id ? 'text-blue-600' : 'text-slate-800'}`}>
                         {file.name}
                     </p>
                     <p className="text-[10px] text-slate-400 font-medium">
@@ -191,6 +205,11 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
 
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+
+    const [activeTab, setActiveTab] = useState<"form" | "pdf">("form");
+    const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+
+    // Auto-selection is handled directly inside upload and remove event handlers to avoid cascading render warnings
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -346,7 +365,14 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                 });
             }
 
-            setAttachedFiles(prev => [...prev, ...newAttachedFiles]);
+            setAttachedFiles(prev => {
+                const updated = [...prev, ...newAttachedFiles];
+                if (newAttachedFiles.length > 0) {
+                    setSelectedFileId(newAttachedFiles[newAttachedFiles.length - 1].id);
+                    setActiveTab("pdf");
+                }
+                return updated;
+            });
         } catch (error) {
             console.error("Erro ao processar PDF:", error);
             alert("Ocorreu um erro ao processar o arquivo PDF. Verifique se o arquivo não está corrompido ou protegido.");
@@ -368,7 +394,13 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
     };
 
     const removeFile = (id: string) => {
-        setAttachedFiles(prev => prev.filter(f => f.id !== id));
+        setAttachedFiles(prev => {
+            const filtered = prev.filter(f => f.id !== id);
+            if (selectedFileId === id) {
+                setSelectedFileId(filtered.length > 0 ? filtered[0].id : null);
+            }
+            return filtered;
+        });
     };
 
     const handlePrint = () => {
@@ -432,256 +464,340 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
         { id: "justa_causa", name: "Dispensa por justa causa" },
     ];
 
+    const hasAttachments = attachedFiles.length > 0;
+    const selectedFile = attachedFiles.find(f => f.id === selectedFileId);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm print:relative print:block print:w-auto print:h-auto print:p-0 print:bg-white print:backdrop-blur-none">
-            <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl flex flex-col md:flex-row print:hidden">
-                {/* Form Section */}
-                <div className="flex-1 p-8 border-r border-slate-100">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-slate-900">Nova Rescisão</h2>
-                        <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+            <div className={`bg-white w-full ${hasAttachments ? 'max-w-7xl lg:h-[90vh]' : 'max-w-4xl max-h-[90vh]'} overflow-y-auto lg:overflow-hidden rounded-2xl shadow-2xl flex flex-col print:hidden transition-all duration-300`}>
+                
+                {/* Tab Header (visible on < lg screens only when attachments exist) */}
+                {hasAttachments && (
+                    <div className="flex border-b border-slate-100 lg:hidden flex-shrink-0 bg-white sticky top-0 z-30">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("form")}
+                            className={`flex-1 py-3.5 text-sm font-bold border-b-2 transition-colors ${activeTab === "form" ? "border-blue-600 text-blue-600 bg-slate-50/30" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                        >
+                            Dados da Rescisão
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("pdf")}
+                            className={`flex-1 py-3.5 text-sm font-bold border-b-2 transition-colors ${activeTab === "pdf" ? "border-blue-600 text-blue-600 bg-slate-50/30" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                        >
+                            Visualizar Anexos ({attachedFiles.length})
                         </button>
                     </div>
+                )}
 
-                    <form className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Funcionário</label>
-                            <input
-                                type="text"
-                                className="input-field"
-                                placeholder="Ex: João Silva"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Modalidade</label>
-                            <select
-                                className="input-field"
-                                value={formData.modality}
-                                onChange={(e) => {
-                                    const nextModality = e.target.value;
-                                    const excludeFgts = nextModality === "" || EXCLUDE_FGTS_MODALITIES.includes(nextModality);
-                                    setFormData({
-                                        ...formData,
-                                        modality: nextModality,
-                                        fgtsPenalty: excludeFgts ? "0" : "",
-                                        fgtsIncludesMonthPrior: excludeFgts ? false : formData.fgtsIncludesMonthPrior,
-                                        fgtsIncludesConsignment: excludeFgts ? false : formData.fgtsIncludesConsignment
-                                    });
-                                }}
-                            >
-                                {modalities.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                            </select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Data do Desligamento</label>
-                                <input
-                                    type="date"
-                                    className="input-field"
-                                    value={formData.terminationDate}
-                                    onChange={(e) => handleDateChange(e.target.value)}
-                                />
-                            </div>
-                            <div className="relative" ref={dropdownRef}>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Detalhes Extrato FGTS</label>
-                                <button
-                                    type="button"
-                                    onClick={() => setFgtsDetailsOpen(!fgtsDetailsOpen)}
-                                    className="input-field flex items-center justify-between w-full text-left bg-white cursor-pointer"
-                                >
-                                    <span className="truncate text-slate-700">
-                                        {fgtsNotAvailable && fgtsOpenGuides
-                                            ? "Não disponível / Guias em aberto"
-                                            : fgtsNotAvailable
-                                            ? "Não disponível"
-                                            : fgtsOpenGuides
-                                            ? "Guias em aberto"
-                                            : "Selecione..."}
-                                    </span>
-                                    <svg
-                                        className={`w-4 h-4 text-slate-400 transition-transform ${fgtsDetailsOpen ? "transform rotate-180" : ""}`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
+                <div className="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0">
+                    {/* Form + Preview Columns (visible on desktop, or when activeTab === "form" on mobile) */}
+                    <div className={`flex-1 flex flex-col md:flex-row min-h-0 ${hasAttachments && activeTab !== "form" ? "hidden lg:flex" : "flex"}`}>
+                        {/* Form Section */}
+                        <div className={`flex-1 p-8 border-r border-slate-100 ${hasAttachments ? 'lg:overflow-y-auto' : ''}`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-slate-900">Nova Rescisão</h2>
+                                <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                                 </button>
-
-                                {fgtsDetailsOpen && (
-                                    <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg p-3 space-y-2.5">
-                                        <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                                checked={fgtsNotAvailable}
-                                                onChange={(e) => setFgtsNotAvailable(e.target.checked)}
-                                            />
-                                            Não disponível
-                                        </label>
-                                        <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                                checked={fgtsOpenGuides}
-                                                onChange={(e) => setFgtsOpenGuides(e.target.checked)}
-                                            />
-                                            Guias em aberto
-                                        </label>
-                                    </div>
-                                )}
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Valor a ser pago Funcionário</label>
-                                <input
-                                    type="number"
-                                    className="input-field"
-                                    placeholder="R$ 0,00"
-                                    value={formData.value}
-                                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-slate-700">Valor Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} FGTS</label>
-                                <input
-                                    type="number"
-                                    className="input-field disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                    placeholder="R$ 0,00"
-                                    value={isFgtsExcluded ? "0" : formData.fgtsPenalty}
-                                    disabled={isFgtsExcluded}
-                                    onChange={(e) => setFormData({ ...formData, fgtsPenalty: e.target.value })}
-                                />
-                                <div className="flex gap-4 mt-2">
-                                    <label className={`flex items-center gap-2 text-[11px] font-medium text-slate-600 ${isFgtsExcluded ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
-                                        <input
-                                            type="checkbox"
-                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
-                                            checked={!isFgtsExcluded && formData.fgtsIncludesMonthPrior}
-                                            disabled={isFgtsExcluded}
-                                            onChange={(e) => setFormData({ ...formData, fgtsIncludesMonthPrior: e.target.checked })}
-                                        />
-                                        FGTS Mês Anterior
-                                    </label>
-                                    <label className={`flex items-center gap-2 text-[11px] font-medium text-slate-600 ${isFgtsExcluded ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
-                                        <input
-                                            type="checkbox"
-                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
-                                            checked={!isFgtsExcluded && formData.fgtsIncludesConsignment}
-                                            disabled={isFgtsExcluded}
-                                            onChange={(e) => setFormData({ ...formData, fgtsIncludesConsignment: e.target.checked })}
-                                        />
-                                        Parcela Consignado
-                                    </label>
+                            <form className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Funcionário</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        placeholder="Ex: João Silva"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    />
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="border-t border-slate-100 pt-4">
-                            <label className="block text-sm font-semibold text-slate-800 mb-2">Arquivos PDFs Anexados (Complementares)</label>
-                            
-                            {/* Upload Area */}
-                            <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-colors bg-slate-50/50 flex flex-col items-center justify-center cursor-pointer group">
-                                <input
-                                    type="file"
-                                    accept="application/pdf"
-                                    multiple
-                                    onChange={handleFileUpload}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    disabled={isProcessingPdf}
-                                />
-                                <div className="text-center space-y-1">
-                                    {isProcessingPdf ? (
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto" />
-                                    ) : (
-                                        <svg className="w-8 h-8 text-slate-400 group-hover:text-blue-500 mx-auto transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                    )}
-                                    <p className="text-xs font-semibold text-slate-700">
-                                        {isProcessingPdf ? "Processando arquivos..." : "Clique ou arraste para anexar PDFs"}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400">Suporta múltiplos PDFs</p>
-                                </div>
-                            </div>
-
-                            {/* Reordering and List Area */}
-                            {attachedFiles.length > 0 && (
-                                <div className="mt-4 space-y-2 max-h-48 overflow-y-auto pr-1">
-                                    <DndContext
-                                        sensors={sensors}
-                                        collisionDetection={closestCenter}
-                                        onDragEnd={handleDragEnd}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Modalidade</label>
+                                    <select
+                                        className="input-field"
+                                        value={formData.modality}
+                                        onChange={(e) => {
+                                            const nextModality = e.target.value;
+                                            const excludeFgts = nextModality === "" || EXCLUDE_FGTS_MODALITIES.includes(nextModality);
+                                            setFormData({
+                                                ...formData,
+                                                modality: nextModality,
+                                                fgtsPenalty: excludeFgts ? "0" : "",
+                                                fgtsIncludesMonthPrior: excludeFgts ? false : formData.fgtsIncludesMonthPrior,
+                                                fgtsIncludesConsignment: excludeFgts ? false : formData.fgtsIncludesConsignment
+                                            });
+                                        }}
                                     >
-                                        <SortableContext
-                                            items={attachedFiles.map(f => f.id)}
-                                            strategy={verticalListSortingStrategy}
-                                        >
-                                            {attachedFiles.map((file, idx) => (
-                                                <SortableFileItem
-                                                    key={file.id}
-                                                    file={file}
-                                                    idx={idx}
-                                                    totalFiles={attachedFiles.length}
-                                                    moveFile={moveFile}
-                                                    removeFile={removeFile}
-                                                />
-                                            ))}
-                                        </SortableContext>
-                                    </DndContext>
+                                        {modalities.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                    </select>
                                 </div>
-                            )}
-                        </div>
-                    </form>
-                </div>
 
-                {/* Preview Section */}
-                <div className="w-full md:w-80 bg-slate-50 p-8 flex flex-col">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-6">Preview do Roteiro</h3>
-
-                    <div className="flex-1 space-y-6 text-sm">
-                        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
-                            <p className="text-slate-500 mb-1 text-xs">Prazo de Pagamento</p>
-                            <input
-                                type="date"
-                                className="w-full text-lg font-bold text-blue-600 bg-transparent border-0 border-b border-dashed border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-0 cursor-pointer p-0 pb-0.5"
-                                value={customPaymentDate}
-                                onChange={(e) => setCustomPaymentDate(e.target.value)}
-                            />
-                            <p className="text-xs text-slate-400 mt-1 italic">Vencimento original: {calcData.originalPaymentDate}</p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Resumo de Valores</p>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-slate-600">
-                                    <span>Líquido:</span>
-                                    <span className="font-bold text-rose-600">{formatCurrency(formData.value)}</span>
-                                </div>
-                                {!isFgtsExcluded && (
-                                    <div className="flex justify-between text-slate-600">
-                                        <span>Multa FGTS:</span>
-                                        <span className="font-bold text-rose-600">{formatCurrency(formData.fgtsPenalty)}</span>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Data do Desligamento</label>
+                                        <input
+                                            type="date"
+                                            className="input-field"
+                                            value={formData.terminationDate}
+                                            onChange={(e) => handleDateChange(e.target.value)}
+                                        />
                                     </div>
-                                )}
+                                    <div className="relative" ref={dropdownRef}>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Detalhes Extrato FGTS</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFgtsDetailsOpen(!fgtsDetailsOpen)}
+                                            className="input-field flex items-center justify-between w-full text-left bg-white cursor-pointer"
+                                        >
+                                            <span className="truncate text-slate-700">
+                                                {fgtsNotAvailable && fgtsOpenGuides
+                                                    ? "Não disponível / Guias em aberto"
+                                                    : fgtsNotAvailable
+                                                    ? "Não disponível"
+                                                    : fgtsOpenGuides
+                                                    ? "Guias em aberto"
+                                                    : "Selecione..."}
+                                            </span>
+                                            <svg
+                                                className={`w-4 h-4 text-slate-400 transition-transform ${fgtsDetailsOpen ? "transform rotate-180" : ""}`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+
+                                        {fgtsDetailsOpen && (
+                                            <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg p-3 space-y-2.5">
+                                                <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                        checked={fgtsNotAvailable}
+                                                        onChange={(e) => setFgtsNotAvailable(e.target.checked)}
+                                                    />
+                                                    Não disponível
+                                                </label>
+                                                <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                        checked={fgtsOpenGuides}
+                                                        onChange={(e) => setFgtsOpenGuides(e.target.checked)}
+                                                    />
+                                                    Guias em aberto
+                                                </label>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Valor a ser pago Funcionário</label>
+                                        <input
+                                            type="number"
+                                            className="input-field"
+                                            placeholder="R$ 0,00"
+                                            value={formData.value}
+                                            onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-slate-700">Valor Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} FGTS</label>
+                                        <input
+                                            type="number"
+                                            className="input-field disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                            placeholder="R$ 0,00"
+                                            value={isFgtsExcluded ? "0" : formData.fgtsPenalty}
+                                            disabled={isFgtsExcluded}
+                                            onChange={(e) => setFormData({ ...formData, fgtsPenalty: e.target.value })}
+                                        />
+                                        <div className="flex gap-4 mt-2">
+                                            <label className={`flex items-center gap-2 text-[11px] font-medium text-slate-600 ${isFgtsExcluded ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                                                    checked={!isFgtsExcluded && formData.fgtsIncludesMonthPrior}
+                                                    disabled={isFgtsExcluded}
+                                                    onChange={(e) => setFormData({ ...formData, fgtsIncludesMonthPrior: e.target.checked })}
+                                                />
+                                                FGTS Mês Anterior
+                                            </label>
+                                            <label className={`flex items-center gap-2 text-[11px] font-medium text-slate-600 ${isFgtsExcluded ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                                                    checked={!isFgtsExcluded && formData.fgtsIncludesConsignment}
+                                                    disabled={isFgtsExcluded}
+                                                    onChange={(e) => setFormData({ ...formData, fgtsIncludesConsignment: e.target.checked })}
+                                                />
+                                                Parcela Consignado
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-100 pt-4">
+                                    <label className="block text-sm font-semibold text-slate-800 mb-2">Arquivos PDFs Anexados (Complementares)</label>
+                                    
+                                    {/* Upload Area */}
+                                    <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-colors bg-slate-50/50 flex flex-col items-center justify-center cursor-pointer group">
+                                        <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            multiple
+                                            onChange={handleFileUpload}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            disabled={isProcessingPdf}
+                                        />
+                                        <div className="text-center space-y-1">
+                                            {isProcessingPdf ? (
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto" />
+                                            ) : (
+                                                <svg className="w-8 h-8 text-slate-400 group-hover:text-blue-500 mx-auto transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                </svg>
+                                            )}
+                                            <p className="text-xs font-semibold text-slate-700">
+                                                {isProcessingPdf ? "Processando arquivos..." : "Clique ou arraste para anexar PDFs"}
+                                            </p>
+                                            <p className="text-[10px] text-slate-400">Suporta múltiplos PDFs</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Reordering and List Area */}
+                                    {attachedFiles.length > 0 && (
+                                        <div className="mt-4 space-y-2 max-h-48 overflow-y-auto pr-1">
+                                            <DndContext
+                                                sensors={sensors}
+                                                collisionDetection={closestCenter}
+                                                onDragEnd={handleDragEnd}
+                                            >
+                                                <SortableContext
+                                                    items={attachedFiles.map(f => f.id)}
+                                                    strategy={verticalListSortingStrategy}
+                                                >
+                                                    {attachedFiles.map((file, idx) => (
+                                                        <SortableFileItem
+                                                            key={file.id}
+                                                            file={file}
+                                                            idx={idx}
+                                                            totalFiles={attachedFiles.length}
+                                                            selectedFileId={selectedFileId}
+                                                            setSelectedFileId={setSelectedFileId}
+                                                            moveFile={moveFile}
+                                                            removeFile={removeFile}
+                                                        />
+                                                    ))}
+                                                </SortableContext>
+                                            </DndContext>
+                                        </div>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Preview Section */}
+                        <div className="w-full md:w-80 bg-slate-50 p-8 flex flex-col">
+                            <h3 className="text-lg font-semibold text-slate-900 mb-6">Preview do Roteiro</h3>
+
+                            <div className="flex-1 space-y-6 text-sm">
+                                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                    <p className="text-slate-500 mb-1 text-xs">Prazo de Pagamento</p>
+                                    <input
+                                        type="date"
+                                        className="w-full text-lg font-bold text-blue-600 bg-transparent border-0 border-b border-dashed border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-0 cursor-pointer p-0 pb-0.5"
+                                        value={customPaymentDate}
+                                        onChange={(e) => setCustomPaymentDate(e.target.value)}
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1 italic">Vencimento original: {calcData.originalPaymentDate}</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Resumo de Valores</p>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-slate-600">
+                                            <span>Líquido:</span>
+                                            <span className="font-bold text-rose-600">{formatCurrency(formData.value)}</span>
+                                        </div>
+                                        {!isFgtsExcluded && (
+                                            <div className="flex justify-between text-slate-600">
+                                                <span>Multa FGTS:</span>
+                                                <span className="font-bold text-rose-600">{formatCurrency(formData.fgtsPenalty)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
+
+                            <button
+                                onClick={handlePrint}
+                                disabled={!isFormValid}
+                                className="btn-primary w-full mt-auto py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Gerar Roteiro PDF
+                            </button>
                         </div>
                     </div>
 
-                    <button
-                        onClick={handlePrint}
-                        disabled={!isFormValid}
-                        className="btn-primary w-full mt-auto py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Gerar Roteiro PDF
-                    </button>
+                    {/* PDF Viewer Column (visible on desktop when attachments exist, or when activeTab === "pdf" on mobile) */}
+                    {hasAttachments && (
+                        <div className={`w-full lg:w-[450px] xl:w-[500px] border-l border-slate-100 bg-slate-50 flex flex-col min-h-0 ${activeTab !== "pdf" ? "hidden lg:flex" : "flex"}`}>
+                            <div className="p-4 border-b border-slate-100 bg-white flex justify-between items-center flex-shrink-0">
+                                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                    </svg>
+                                    Visualização de Anexos
+                                </h3>
+                                <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">
+                                    {attachedFiles.length} {attachedFiles.length === 1 ? 'arquivo' : 'arquivos'}
+                                </span>
+                            </div>
+
+                            {/* File Selector Tabs if multiple files */}
+                            {attachedFiles.length > 1 && (
+                                <div className="flex gap-2 p-3 overflow-x-auto border-b border-slate-100 bg-white flex-shrink-0">
+                                    {attachedFiles.map(file => (
+                                        <button
+                                            key={file.id}
+                                            type="button"
+                                            onClick={() => setSelectedFileId(file.id)}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${selectedFileId === file.id ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'}`}
+                                        >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                            {file.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Scrollable pages container */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100/50">
+                                {selectedFile ? (
+                                    selectedFile.pages.map((pageDataUrl, pageIdx) => (
+                                        <div key={pageIdx} className="bg-white p-2.5 rounded-xl shadow-sm border border-slate-200/60 flex flex-col items-center">
+                                            <span className="text-[9px] text-slate-400 font-bold mb-1.5">Página {pageIdx + 1} de {selectedFile.pages.length}</span>
+                                            <img src={pageDataUrl} className="w-full h-auto object-contain rounded-lg border border-slate-100" alt={`Página ${pageIdx + 1}`} />
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center space-y-2">
+                                        <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                        </svg>
+                                        <p className="text-xs font-bold text-slate-500">Nenhum PDF selecionado</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
