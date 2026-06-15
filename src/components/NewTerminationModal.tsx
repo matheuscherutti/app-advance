@@ -696,13 +696,13 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 {attachedFiles.length > 0 && (
                                     <div className="space-y-3 pt-4 border-t border-slate-200">
                                         <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Documentos Anexados</p>
-                                        <ol className="space-y-2 text-xs text-slate-600 list-decimal pl-4">
-                                            {attachedFiles.map((file) => (
-                                                <li key={file.id} className="font-semibold truncate pr-1" title={file.name}>
-                                                    {file.name}
-                                                </li>
+                                        <div className="space-y-2 text-xs text-slate-600 pl-1">
+                                            {attachedFiles.map((file, idx) => (
+                                                <div key={file.id} className="font-semibold truncate pr-1" title={file.name}>
+                                                    {idx + 1}. {file.name}
+                                                </div>
                                             ))}
-                                        </ol>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -989,13 +989,13 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             {attachedFiles.length > 0 && (
                                 <div className="bg-white p-4 rounded-xl border border-slate-200/50 shadow-sm mb-5">
                                     <p className="font-extrabold text-[11px] text-slate-800 uppercase tracking-wider mb-2">Documentos Anexados:</p>
-                                    <ol className="space-y-1.5 text-[11px] text-slate-600 list-decimal pl-4 font-semibold">
-                                        {attachedFiles.map((file) => (
-                                            <li key={file.id} className="truncate">
-                                                {file.name}
-                                            </li>
+                                    <div className="space-y-1.5 text-[11px] text-slate-600 pl-1 font-semibold">
+                                        {attachedFiles.map((file, idx) => (
+                                            <div key={file.id} className="truncate">
+                                                {idx + 1}. {file.name}
+                                            </div>
                                         ))}
-                                    </ol>
+                                    </div>
                                 </div>
                             )}
                         </div>
