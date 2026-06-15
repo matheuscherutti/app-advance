@@ -64,11 +64,16 @@ body {
 
   .print-page {
     width: 100% !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
+    height: 95vh !important;
+    max-height: 95vh !important;
     overflow: hidden !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  .print-page img {
+    max-height: 100% !important;
+    object-fit: contain !important;
   }
 
   /* Reset html and body constraints to allow natural multi-page flow */

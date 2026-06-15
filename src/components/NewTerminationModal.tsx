@@ -66,12 +66,13 @@ interface ModalProps {
 
 interface SortableGridFileItemProps {
     file: AttachedFile;
+    index: number;
     selectedFileId: string | null;
     setSelectedFileId: (id: string | null) => void;
     removeFile: (id: string) => void;
 }
 
-function SortableGridFileItem({ file, selectedFileId, setSelectedFileId, removeFile }: SortableGridFileItemProps) {
+function SortableGridFileItem({ file, index, selectedFileId, setSelectedFileId, removeFile }: SortableGridFileItemProps) {
     const {
         attributes,
         listeners,
@@ -113,8 +114,9 @@ function SortableGridFileItem({ file, selectedFileId, setSelectedFileId, removeF
             </div>
             
             <p className="text-[9px] font-bold text-slate-500 truncate mt-1 text-center w-full block px-0.5" title={file.name}>
-                {file.name}
+                {index + 1}. {file.name}
             </p>
+
 
             <button
                 type="button"
@@ -742,10 +744,11 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                         strategy={rectSortingStrategy}
                                     >
                                         <div className="grid grid-cols-2 gap-4">
-                                            {attachedFiles.map((file) => (
+                                            {attachedFiles.map((file, index) => (
                                                 <SortableGridFileItem
                                                     key={file.id}
                                                     file={file}
+                                                    index={index}
                                                     selectedFileId={selectedFileId}
                                                     setSelectedFileId={setSelectedFileId}
                                                     removeFile={removeFile}
@@ -981,6 +984,20 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Attached Documents list on printed PDF Page 1 */}
+                            {attachedFiles.length > 0 && (
+                                <div className="bg-white p-4 rounded-xl border border-slate-200/50 shadow-sm mb-5">
+                                    <p className="font-extrabold text-[11px] text-slate-800 uppercase tracking-wider mb-2">Documentos Anexados:</p>
+                                    <ol className="space-y-1.5 text-[11px] text-slate-600 list-decimal pl-4 font-semibold">
+                                        {attachedFiles.map((file) => (
+                                            <li key={file.id} className="truncate">
+                                                {file.name}
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer Instructions */}
