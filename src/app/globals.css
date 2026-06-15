@@ -62,6 +62,15 @@ body {
     page: landscape-page;
   }
 
+  .print-page {
+    width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
   /* Reset html and body constraints to allow natural multi-page flow */
   html, body {
     height: auto !important;
