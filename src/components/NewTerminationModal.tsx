@@ -767,7 +767,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
             <div className="hidden print:block font-sans text-slate-900 bg-[#fafaf9]" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
                 {/* PAGE 1: ROADMAP */}
                 <div 
-                    className="print-page print:w-full print:h-screen print:relative print:overflow-hidden print:flex print:flex-col print:justify-between relative w-full h-screen flex flex-col justify-between" 
+                    className="print-page print:relative print:overflow-hidden print:flex print:flex-col print:justify-between relative w-full h-screen flex flex-col justify-between" 
                     style={attachedFiles.length > 0 ? { breakAfter: "page", pageBreakAfter: "always" } : undefined}
                 >
                     {/* Visual Artifacts */}
@@ -1046,7 +1046,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                         return (
                             <div
                                 key={`${file.id}-${pageIdx}`}
-                                className={`print-page print:w-full print:h-screen print:relative print:flex print:items-center print:justify-center print:overflow-hidden bg-white p-0 ${page.isLandscape ? 'print-landscape' : ''}`}
+                                className={`print-page print:relative print:flex print:items-center print:justify-center bg-white p-0 ${page.isLandscape ? 'print-landscape' : ''}`}
                                 style={isAbsoluteLast ? undefined : { breakAfter: "page", pageBreakAfter: "always" }}
                             >
                                 <img src={page.dataUrl} className="w-full h-full object-contain" alt={`${file.name} - Página ${pageIdx + 1}`} />

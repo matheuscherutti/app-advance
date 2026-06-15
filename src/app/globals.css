@@ -64,8 +64,8 @@ body {
 
   .print-page {
     width: 100% !important;
-    height: 95vh !important;
-    max-height: 95vh !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
     overflow: hidden !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
