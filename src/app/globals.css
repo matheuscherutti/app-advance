@@ -64,11 +64,17 @@ body {
 
   .print-page {
     width: 100% !important;
-    height: 92vh !important;
-    max-height: 92vh !important;
+    height: 280mm !important;
+    max-height: 280mm !important;
     overflow: hidden !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  .print-landscape {
+    page: landscape-page;
+    height: 195mm !important;
+    max-height: 195mm !important;
   }
 
   .print-page img {

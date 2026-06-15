@@ -984,20 +984,6 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                     </div>
                                 )}
                             </div>
-
-                            {/* Attached Documents list on printed PDF Page 1 */}
-                            {attachedFiles.length > 0 && (
-                                <div className="bg-white p-4 rounded-xl border border-slate-200/50 shadow-sm mb-5">
-                                    <p className="font-extrabold text-[11px] text-slate-800 uppercase tracking-wider mb-2">Documentos Anexados:</p>
-                                    <div className="space-y-1.5 text-[11px] text-slate-600 pl-1 font-semibold">
-                                        {attachedFiles.map((file, idx) => (
-                                            <div key={file.id} className="truncate">
-                                                {idx + 1}. {file.name}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* Footer Instructions */}
