@@ -9,20 +9,8 @@ interface TerminationListProps {
 export default function TerminationList({ terminations }: TerminationListProps) {
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "Finalizada": return "bg-emerald-100 text-emerald-700";
-            case "Atrasada": return "bg-rose-100 text-rose-700";
-            case "Aguardando pagamento": return "bg-amber-100 text-amber-700";
+            case "Emitido": return "bg-blue-100 text-blue-700";
             default: return "bg-slate-100 text-slate-700";
-        }
-    };
-
-    const toggleStatus = async (id: string, currentStatus: string) => {
-        try {
-            const newStatus = currentStatus === "Finalizada" ? "Aguardando pagamento" : "Finalizada";
-            const docRef = doc(db, "terminations", id);
-            await updateDoc(docRef, { status: newStatus });
-        } catch (error) {
-            console.error("Erro ao atualizar status: ", error);
         }
     };
 
@@ -76,12 +64,6 @@ export default function TerminationList({ terminations }: TerminationListProps) 
                                 </span>
                             </td>
                             <td className="py-4 px-4 text-right">
-                                <button
-                                    onClick={() => toggleStatus(item.id, item.status)}
-                                    className={`${item.status === "Finalizada" ? "text-slate-500 hover:text-slate-700" : "text-emerald-600 hover:text-emerald-800"} text-xs font-bold mr-3 opacity-0 group-hover:opacity-100 transition-opacity`}
-                                >
-                                    {item.status === "Finalizada" ? "Reabrir" : "Finalizar"}
-                                </button>
                                 <button
                                     onClick={() => deleteTermination(item.id)}
                                     className="text-rose-600 hover:text-rose-800 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"

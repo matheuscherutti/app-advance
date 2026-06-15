@@ -17,6 +17,7 @@ import {
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
+    rectSortingStrategy,
     useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -26,7 +27,8 @@ const EXCLUDE_FGTS_MODALITIES = [
     "pedido_demissao_sem_desconto_aviso",
     "rescisao_antecipada_experiencia_empregado",
     "pedido_demissao_aviso_trabalhado",
-    "justa_causa"
+    "justa_causa",
+    "termino_estagio"
 ];
 
 const getModalityWarningText = (modality: string) => {
@@ -47,27 +49,29 @@ const getModalityWarningText = (modality: string) => {
     }
 };
 
+interface PageData {
+    dataUrl: string;
+    isLandscape: boolean;
+}
+
 interface AttachedFile {
     id: string;
     name: string;
-    pages: string[];
+    pages: PageData[];
 }
 
 interface ModalProps {
     onClose: () => void;
 }
 
-interface SortableFileItemProps {
+interface SortableGridFileItemProps {
     file: AttachedFile;
-    idx: number;
-    totalFiles: number;
     selectedFileId: string | null;
     setSelectedFileId: (id: string | null) => void;
-    moveFile: (index: number, direction: "up" | "down") => void;
     removeFile: (id: string) => void;
 }
 
-function SortableFileItem({ file, idx, totalFiles, selectedFileId, setSelectedFileId, moveFile, removeFile }: SortableFileItemProps) {
+function SortableGridFileItem({ file, selectedFileId, setSelectedFileId, removeFile }: SortableGridFileItemProps) {
     const {
         attributes,
         listeners,
@@ -81,82 +85,50 @@ function SortableFileItem({ file, idx, totalFiles, selectedFileId, setSelectedFi
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
-        position: 'relative' as const,
-        zIndex: isDragging ? 50 : 'auto',
     };
+
+    const isSelected = selectedFileId === file.id;
 
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center justify-between p-3 bg-white border rounded-xl shadow-sm hover:border-slate-200 transition-all ${selectedFileId === file.id ? 'border-blue-200 bg-blue-50/20' : 'border-slate-100'}`}
+            className="relative group cursor-grab active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
         >
-            <div className="flex items-center gap-3 overflow-hidden flex-1">
-                {/* Drag Handle */}
-                <div
-                    {...attributes}
-                    {...listeners}
-                    className="cursor-grab active:cursor-grabbing p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-colors flex-shrink-0"
-                    title="Arrastar para reordenar"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-                    </svg>
-                </div>
-
-                <div 
-                    className="w-8 h-10 rounded border border-slate-200 bg-slate-50 overflow-hidden flex-shrink-0 flex items-center justify-center shadow-sm relative cursor-pointer"
-                    onClick={() => setSelectedFileId(file.id)}
-                    title="Clique para visualizar"
-                >
-                    {file.pages.length > 0 ? (
-                        <img src={file.pages[0]} className="w-full h-full object-cover" alt="Thumb" />
-                    ) : (
-                        <span className="text-rose-600 font-bold text-[8px] uppercase">PDF</span>
-                    )}
-                </div>
-                <div 
-                    className="overflow-hidden cursor-pointer flex-1"
-                    onClick={() => setSelectedFileId(file.id)}
-                    title="Clique para visualizar"
-                >
-                    <p className={`text-xs font-bold truncate ${selectedFileId === file.id ? 'text-blue-600' : 'text-slate-800'}`}>
-                        {file.name}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-medium">
-                        {file.pages.length} {file.pages.length === 1 ? "página" : "páginas"}
-                    </p>
-                </div>
+            <div 
+                onClick={(e) => {
+                    setSelectedFileId(file.id);
+                }}
+                className={`w-full aspect-[3/4] bg-white rounded-lg border-2 shadow-sm overflow-hidden flex flex-col items-center justify-center transition-all ${
+                    isSelected ? "border-blue-500 ring-2 ring-blue-500/20" : "border-slate-200 hover:border-slate-300"
+                }`}
+            >
+                {file.pages.length > 0 ? (
+                    <img src={file.pages[0].dataUrl} className="w-full h-full object-cover pointer-events-none" alt={file.name} />
+                ) : (
+                    <span className="text-[10px] font-black text-rose-500">PDF</span>
+                )}
             </div>
             
-            <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                <button
-                    type="button"
-                    onClick={() => moveFile(idx, "up")}
-                    disabled={idx === 0}
-                    className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                    title="Mover para cima"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" /></svg>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => moveFile(idx, "down")}
-                    disabled={idx === totalFiles - 1}
-                    className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                    title="Mover para baixo"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => removeFile(file.id)}
-                    className="w-7 h-7 rounded-lg hover:bg-rose-50 text-rose-600 flex items-center justify-center transition-colors"
-                    title="Excluir"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-            </div>
+            <p className="text-[9px] font-bold text-slate-500 truncate mt-1 text-center w-full block px-0.5" title={file.name}>
+                {file.name}
+            </p>
+
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    removeFile(file.id);
+                }}
+                className="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full w-4.5 h-4.5 flex items-center justify-center shadow-md transition-all scale-0 group-hover:scale-100 cursor-pointer z-10"
+                title="Remover anexo"
+            >
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
     );
 }
@@ -318,17 +290,17 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                 const file = files[i];
                 if (file.type !== "application/pdf") continue;
 
-                const pages: string[] = await new Promise((resolve, reject) => {
+                const pages: PageData[] = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = async (event) => {
                         try {
                             const typedArray = new Uint8Array(event.target?.result as ArrayBuffer);
                             const pdf = await pdfjs.getDocument({ data: typedArray }).promise;
-                            const renderedPages: string[] = [];
+                            const renderedPages: PageData[] = [];
 
                             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                                 const page = await pdf.getPage(pageNum);
-                                const viewport = page.getViewport({ scale: 1.5 });
+                                const viewport = page.getViewport({ scale: 3.0 });
                                 const canvas = document.createElement("canvas");
                                 const context = canvas.getContext("2d");
                                 if (!context) continue;
@@ -347,7 +319,8 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 }).promise;
 
                                 const dataUrl = canvas.toDataURL("image/png");
-                                renderedPages.push(dataUrl);
+                                const isLandscape = viewport.width > viewport.height;
+                                renderedPages.push({ dataUrl, isLandscape });
                             }
                             resolve(renderedPages);
                         } catch (err) {
@@ -418,7 +391,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                 date: formatDateStr(formData.terminationDate),
                 paymentDate: formatDateStr(customPaymentDate),
                 value: formattedValue,
-                status: "Aguardando pagamento",
+                status: "Emitido",
                 createdAt: timestamp,
             }).catch((error) => {
                 console.error("Erro ao salvar no Firestore: ", error);
@@ -427,8 +400,17 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
             console.error("Erro ao processar dados de salvamento: ", error);
         }
 
+        // Altera temporariamente o título do documento para definir o nome padrão do arquivo PDF
+        const originalTitle = document.title;
+        document.title = `Roteiro de Rescisão - ${formData.name.trim()}`;
+
         // Abre o diálogo de impressão de forma síncrona para garantir que o navegador não bloqueie a ação
         window.print();
+
+        // Restaura o título após a captura do diálogo de impressão
+        setTimeout(() => {
+            document.title = originalTitle;
+        }, 1000);
     };
 
     const formatDateStr = (dateStr: string) => {
@@ -452,16 +434,17 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
 
     const modalities = [
         { id: "", name: "Selecione..." },
+        { id: "acordo_partes", name: "Acordo entre as partes" },
         { id: "dispensa_aviso_indenizado", name: "Dispensa com aviso indenizado" },
         { id: "dispensa_aviso_trabalhado", name: "Dispensa com aviso trabalhado" },
+        { id: "justa_causa", name: "Dispensa por justa causa" },
+        { id: "pedido_demissao_aviso_trabalhado", name: "Pedido de demissão com aviso trabalhado" },
         { id: "pedido_demissao_desconto_aviso", name: "Pedido de demissão com desconto do aviso" },
         { id: "pedido_demissao_sem_desconto_aviso", name: "Pedido de demissão sem desconto do aviso" },
-        { id: "pedido_demissao_aviso_trabalhado", name: "Pedido de demissão com aviso trabalhado" },
-        { id: "termino_experiencia", name: "Término de contrato de experiência" },
         { id: "rescisao_antecipada_experiencia_empregado", name: "Rescisão antecipada do contrato de experiência a pedido do empregado" },
         { id: "rescisao_antecipada_experiencia_empregador", name: "Rescisão antecipada do contrato de experiência pelo empregador" },
-        { id: "acordo_partes", name: "Acordo entre as partes" },
-        { id: "justa_causa", name: "Dispensa por justa causa" },
+        { id: "termino_estagio", name: "Término de contrato de estágio" },
+        { id: "termino_experiencia", name: "Término de contrato de experiência" },
     ];
 
     const hasAttachments = attachedFiles.length > 0;
@@ -486,7 +469,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             onClick={() => setActiveTab("pdf")}
                             className={`flex-1 py-3.5 text-sm font-bold border-b-2 transition-colors ${activeTab === "pdf" ? "border-blue-600 text-blue-600 bg-slate-50/30" : "border-transparent text-slate-500 hover:text-slate-700"}`}
                         >
-                            Visualizar Anexos ({attachedFiles.length})
+                            Documentos Anexados ({attachedFiles.length})
                         </button>
                     </div>
                 )}
@@ -671,34 +654,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                         </div>
                                     </div>
 
-                                    {/* Reordering and List Area */}
-                                    {attachedFiles.length > 0 && (
-                                        <div className="mt-4 space-y-2 max-h-48 overflow-y-auto pr-1">
-                                            <DndContext
-                                                sensors={sensors}
-                                                collisionDetection={closestCenter}
-                                                onDragEnd={handleDragEnd}
-                                            >
-                                                <SortableContext
-                                                    items={attachedFiles.map(f => f.id)}
-                                                    strategy={verticalListSortingStrategy}
-                                                >
-                                                    {attachedFiles.map((file, idx) => (
-                                                        <SortableFileItem
-                                                            key={file.id}
-                                                            file={file}
-                                                            idx={idx}
-                                                            totalFiles={attachedFiles.length}
-                                                            selectedFileId={selectedFileId}
-                                                            setSelectedFileId={setSelectedFileId}
-                                                            moveFile={moveFile}
-                                                            removeFile={removeFile}
-                                                        />
-                                                    ))}
-                                                </SortableContext>
-                                            </DndContext>
-                                        </div>
-                                    )}
+
                                 </div>
                             </form>
                         </div>
@@ -707,7 +663,7 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                         <div className="w-full md:w-80 bg-slate-50 p-8 flex flex-col">
                             <h3 className="text-lg font-semibold text-slate-900 mb-6">Preview do Roteiro</h3>
 
-                            <div className="flex-1 space-y-6 text-sm">
+                            <div className="flex-1 flex flex-col min-h-0 space-y-6 text-sm">
                                 <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
                                     <p className="text-slate-500 mb-1 text-xs">Prazo de Pagamento</p>
                                     <input
@@ -751,50 +707,40 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                         <div className={`w-full lg:w-[450px] xl:w-[500px] border-l border-slate-100 bg-slate-50 flex flex-col min-h-0 ${activeTab !== "pdf" ? "hidden lg:flex" : "flex"}`}>
                             <div className="p-4 border-b border-slate-100 bg-white flex justify-between items-center flex-shrink-0">
                                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                                     </svg>
-                                    Visualização de Anexos
+                                    Documentos Anexados
                                 </h3>
                                 <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">
                                     {attachedFiles.length} {attachedFiles.length === 1 ? 'arquivo' : 'arquivos'}
                                 </span>
                             </div>
 
-                            {/* File Selector Tabs if multiple files */}
-                            {attachedFiles.length > 1 && (
-                                <div className="flex gap-2 p-3 overflow-x-auto border-b border-slate-100 bg-white flex-shrink-0">
-                                    {attachedFiles.map(file => (
-                                        <button
-                                            key={file.id}
-                                            type="button"
-                                            onClick={() => setSelectedFileId(file.id)}
-                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${selectedFileId === file.id ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'}`}
-                                        >
-                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                            {file.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Scrollable pages container */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100/50">
-                                {selectedFile ? (
-                                    selectedFile.pages.map((pageDataUrl, pageIdx) => (
-                                        <div key={pageIdx} className="bg-white p-2.5 rounded-xl shadow-sm border border-slate-200/60 flex flex-col items-center">
-                                            <span className="text-[9px] text-slate-400 font-bold mb-1.5">Página {pageIdx + 1} de {selectedFile.pages.length}</span>
-                                            <img src={pageDataUrl} className="w-full h-auto object-contain rounded-lg border border-slate-100" alt={`Página ${pageIdx + 1}`} />
+                            {/* Scrollable grid of attachments with larger thumbnails */}
+                            <div className="flex-1 overflow-y-auto p-6 bg-slate-100/50">
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <SortableContext
+                                        items={attachedFiles.map(f => f.id)}
+                                        strategy={rectSortingStrategy}
+                                    >
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {attachedFiles.map((file) => (
+                                                <SortableGridFileItem
+                                                    key={file.id}
+                                                    file={file}
+                                                    selectedFileId={selectedFileId}
+                                                    setSelectedFileId={setSelectedFileId}
+                                                    removeFile={removeFile}
+                                                />
+                                            ))}
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center space-y-2">
-                                        <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                        </svg>
-                                        <p className="text-xs font-bold text-slate-500">Nenhum PDF selecionado</p>
-                                    </div>
-                                )}
+                                    </SortableContext>
+                                </DndContext>
                             </div>
                         </div>
                     )}
@@ -802,9 +748,12 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
             </div>
 
             {/* HIGH FIDELITY PRINT TEMPLATE (Hidden from screen, visible in print) */}
-            <div className="hidden print:block font-sans text-slate-900 bg-[#fafaf9]">
+            <div className="hidden print:block font-sans text-slate-900 bg-[#fafaf9]" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
                 {/* PAGE 1: ROADMAP */}
-                <div className="print:w-full print:h-screen print:relative print:overflow-hidden print:flex print:flex-col print:justify-between relative w-full h-screen flex flex-col justify-between" style={{ breakAfter: "page", pageBreakAfter: "always" }}>
+                <div 
+                    className="print:w-full print:h-screen print:relative print:overflow-hidden print:flex print:flex-col print:justify-between relative w-full h-screen flex flex-col justify-between" 
+                    style={attachedFiles.length > 0 ? { breakAfter: "page", pageBreakAfter: "always" } : undefined}
+                >
                     {/* Visual Artifacts */}
                     <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-gradient-to-b from-[#001bb3] via-[#00129a] to-[#fca311] z-20" />
 
@@ -847,10 +796,10 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             {/* Intro */}
                             <div className="mb-5 leading-relaxed text-[12px] text-slate-700 bg-white p-4 rounded-xl border border-slate-200/50 shadow-sm relative overflow-hidden">
                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#001bb3]" />
-                                <p className="mb-2">Olá, tudo bem? Segue anexo os documentos de rescisão do colaborador <span className="font-bold text-slate-900">{formData.name}</span>, com data de desligamento em <span className="text-[#001bb3] font-bold">{formatDateStr(formData.terminationDate)}</span>.</p>
+                                <p className="mb-2">Olá, tudo bem? Segue anexo os documentos de {formData.modality === "termino_estagio" ? "término de contrato" : "rescisão"} do {formData.modality === "termino_estagio" ? "estagiário" : "colaborador"} <span className="font-bold text-slate-900">{formData.name}</span>, com data de desligamento em <span className="text-[#001bb3] font-bold">{formatDateStr(formData.terminationDate)}</span>.</p>
                                 <p className="mb-2">A data limite para o pagamento das verbas rescisórias e entrega de vias é <span className="text-[#001bb3] font-bold">{formatDateStr(customPaymentDate)}</span>.</p>
                                 <p className="text-[#e27c00] font-bold flex items-center gap-1.5 mt-2 text-[11px]">
-                                    ⚠️ Importante: Providenciar exame demissional do colaborador.
+                                    ⚠️ Importante: Providenciar exame demissional do {formData.modality === "termino_estagio" ? "estagiário" : "colaborador"}.
                                 </p>
                             </div>
 
@@ -861,102 +810,142 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#001bb3]" />
                                     <h3 className="font-black text-xs text-[#121824] uppercase mb-3 pb-1 border-b border-slate-100 tracking-wider">VIAS EMPRESA</h3>
                                     <ul className="space-y-2 flex-1">
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Relatório analítico do cálculo de rescisão;</span>
-                                        </li>
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Termo de rescisão;</span>
-                                        </li>
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Termo de quitação;</span>
-                                        </li>
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>
-                                                {fgtsNotAvailable && fgtsOpenGuides
-                                                    ? "01 via – Extrato de FGTS (Não disponível / Guias em aberto);"
-                                                    : fgtsNotAvailable
-                                                    ? "01 via – Extrato de FGTS (Não disponível);"
-                                                    : fgtsOpenGuides
-                                                    ? "01 via – Extrato de FGTS (Guias em aberto);"
-                                                    : "01 via – Extrato de FGTS;"}
-                                            </span>
-                                        </li>
-                                        {hasFgtsGuia && (
+                                        {formData.modality === "termino_estagio" ? (
                                             <>
                                                 <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                                     <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                                    <span>01 via – Guia de recolhimento de FGTS;</span>
+                                                    <span>01 via – Relatório analítico do cálculo de rescisão;</span>
                                                 </li>
                                                 <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                                                     <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                                    <span>01 via – Detalhamento da guia FGTS;</span>
+                                                    <span>01 via – Termo de rescisão do contrato de estágio;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Comprovante de pagamento das verbas (Ao fazer o pagamento anexar o comprovante)</span>
+                                                </li>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Relatório analítico do cálculo de rescisão;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Termo de rescisão;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Termo de quitação;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>
+                                                        {fgtsNotAvailable && fgtsOpenGuides
+                                                            ? "01 via – Extrato de FGTS (Não disponível / Guias em aberto);"
+                                                            : fgtsNotAvailable
+                                                            ? "01 via – Extrato de FGTS (Não disponível);"
+                                                            : fgtsOpenGuides
+                                                            ? "01 via – Extrato de FGTS (Guias em aberto);"
+                                                            : "01 via – Extrato de FGTS;"}
+                                                    </span>
+                                                </li>
+                                                {hasFgtsGuia && (
+                                                    <>
+                                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                            <span>01 via – Guia de recolhimento de FGTS;</span>
+                                                        </li>
+                                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                            <span>01 via – Detalhamento da guia FGTS;</span>
+                                                        </li>
+                                                    </>
+                                                )}
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Comprovante de pagamento das verbas (anexar na rescisão).</span>
                                                 </li>
                                             </>
                                         )}
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Comprovante de pagamento das verbas (anexar na rescisão).</span>
-                                        </li>
                                     </ul>
                                 </section>
 
                                 <section className="bg-white p-5 rounded-xl border border-slate-200/50 shadow-sm relative overflow-hidden flex flex-col">
                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#001bb3]" />
-                                    <h3 className="font-black text-xs text-[#121824] uppercase mb-3 pb-1 border-b border-slate-100 tracking-wider">VIAS COLABORADOR</h3>
+                                    <h3 className="font-black text-xs text-[#121824] uppercase mb-3 pb-1 border-b border-slate-100 tracking-wider">
+                                        {formData.modality === "termino_estagio" ? "VIAS ESTAGIÁRIO" : "VIAS COLABORADOR"}
+                                    </h3>
                                     <ul className="space-y-2 flex-1">
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Carta de referência;</span>
-                                        </li>
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Termo de rescisão;</span>
-                                        </li>
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Termo de quitação;</span>
-                                        </li>
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>
-                                                {fgtsNotAvailable && fgtsOpenGuides
-                                                    ? "01 via – Extrato de FGTS (Não disponível / Guias em aberto);"
-                                                    : fgtsNotAvailable
-                                                    ? "01 via – Extrato de FGTS (Não disponível);"
-                                                    : fgtsOpenGuides
-                                                    ? "01 via – Extrato de FGTS (Guias em aberto);"
-                                                    : "01 via – Extrato de FGTS;"}
-                                            </span>
-                                        </li>
-                                        {hasSeguroDesemprego && (
-                                            <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                                <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                                <span>01 via – Requerimento seguro desemprego;</span>
-                                            </li>
+                                        {formData.modality === "termino_estagio" ? (
+                                            <>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Termo de rescisão do contrato de estágio;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Carta de referência;</span>
+                                                </li>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Carta de referência;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Termo de rescisão;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Termo de quitação;</span>
+                                                </li>
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>
+                                                        {fgtsNotAvailable && fgtsOpenGuides
+                                                            ? "01 via – Extrato de FGTS (Não disponível / Guias em aberto);"
+                                                            : fgtsNotAvailable
+                                                            ? "01 via – Extrato de FGTS (Não disponível);"
+                                                            : fgtsOpenGuides
+                                                            ? "01 via – Extrato de FGTS (Guias em aberto);"
+                                                            : "01 via – Extrato de FGTS;"}
+                                                    </span>
+                                                </li>
+                                                {hasSeguroDesemprego && (
+                                                    <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                        <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                        <span>01 via – Requerimento seguro desemprego;</span>
+                                                    </li>
+                                                )}
+                                                <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
+                                                    <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
+                                                    <span>01 via – Comprovante de pagamento das verbas.</span>
+                                                </li>
+                                            </>
                                         )}
-                                        <li className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
-                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-slate-50 flex-shrink-0 mt-0.5" />
-                                            <span>01 via – Comprovante de pagamento das verbas.</span>
-                                        </li>
                                     </ul>
                                 </section>
                             </div>
 
                             {/* Summary Values */}
-                            <div className="bg-gradient-to-r from-[#00129a] to-[#111827] text-white p-5 rounded-xl border border-[#001bb3]/35 shadow-md flex justify-between gap-4 mb-5 relative overflow-hidden">
-                                <div className="absolute right-0 top-0 w-32 h-32 bg-[#001bb3]/10 rounded-full blur-2xl pointer-events-none" />
+                            <div 
+                                className="bg-gradient-to-r from-[#00129a] to-[#111827] text-white print:text-slate-800 p-5 rounded-xl border border-[#001bb3]/35 print:border-slate-350 shadow-md flex justify-between gap-4 mb-5 relative overflow-hidden print:bg-white print:bg-none print:shadow-none"
+                            >
+                                <div className="absolute right-0 top-0 w-32 h-32 bg-[#001bb3]/10 rounded-full blur-2xl pointer-events-none print:hidden" />
                                 
-                                <div className={`flex-1 ${!isFgtsExcluded ? "border-r border-slate-800/80 pr-4" : ""} last:border-0 last:pr-0`}>
-                                    <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Valor Líquido a ser Pago</span>
-                                    <div className="text-xl font-black text-[#fca311] mt-0.5 leading-none flex items-center flex-wrap">
+                                <div className={`flex-1 ${!isFgtsExcluded ? "border-r border-slate-800/80 print:border-slate-200 pr-4" : ""} last:border-0 last:pr-0`}>
+                                    <span className="text-[10px] uppercase tracking-wider text-slate-400 print:text-slate-500 font-bold block">
+                                        {formData.modality === "termino_estagio" ? "VALOR LÍQUIDO A SER PAGO PARA ESTAGIÁRIO" : "Valor Líquido a ser Pago ao Colaborador"}
+                                    </span>
+                                    <div className="text-xl font-black text-[#fca311] print:text-[#00129a] mt-0.5 leading-none flex items-center flex-wrap">
                                         <span>{formatCurrency(formData.value)}</span>
                                         {(parseFloat(formData.value) === 0 || isNaN(parseFloat(formData.value)) || parseFloat(formData.value) < 0) && (
-                                            <span className="text-[10px] text-red-400 font-black uppercase tracking-wider ml-2">
-                                                - Não há valores a serem pagos para o funcionário
+                                            <span className="text-[10px] text-red-400 print:text-red-750 font-black uppercase tracking-wider ml-2">
+                                                - Não há valores a serem pagos para o {formData.modality === "termino_estagio" ? "estagiário" : "funcionário"} (Rescisão zerada / com estouro)
                                             </span>
                                         )}
                                     </div>
@@ -964,10 +953,12 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 
                                 {!isFgtsExcluded && (
                                     <div className="flex-1 pl-4">
-                                        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} sobre o FGTS</span>
-                                        <div className="text-xl font-black text-[#fca311] mt-0.5 leading-none">{formatCurrency(formData.fgtsPenalty)}</div>
+                                        <span className="text-[10px] uppercase tracking-wider text-slate-400 print:text-slate-500 font-bold block">Multa {formData.modality === "acordo_partes" ? "20%" : "40%"} sobre o FGTS</span>
+                                        <div className="text-xl font-black text-[#fca311] print:text-[#00129a] mt-0.5 leading-none">{formatCurrency(formData.fgtsPenalty)}</div>
                                         {(formData.fgtsIncludesMonthPrior || formData.fgtsIncludesConsignment) && (
-                                            <div className="text-[10px] mt-2 py-1 px-2.5 inline-block italic normal-case text-slate-900 font-bold bg-[#fca311] rounded border border-[#001bb3]/20">
+                                            <div 
+                                                className="text-[10px] mt-2 py-1 px-2.5 inline-block italic normal-case text-slate-900 font-bold bg-[#fca311] print:bg-slate-100 print:text-slate-900 rounded border border-[#001bb3]/20 print:border-slate-300"
+                                            >
                                                 está incluso: {[
                                                     formData.fgtsIncludesMonthPrior && "FGTS mês anterior",
                                                     formData.fgtsIncludesConsignment && "Parcela do consignado"
@@ -1010,24 +1001,29 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                             )}
 
                             <div className="bg-amber-50/80 p-3 text-center text-[10.5px] font-black uppercase text-[#991b1b] border border-red-200/60 rounded-xl">
-                                ATENÇÃO: O PAGAMENTO DA RESCISÃO FORA DO PRAZO ACARRETARÁ EM MULTA DE UM SALÁRIO DO COLABORADOR.
+                                ATENÇÃO: O PAGAMENTO DA RESCISÃO FORA DO PRAZO ACARRETARÁ EM MULTA DE UM SALÁRIO DO {formData.modality === "termino_estagio" ? "ESTAGIÁRIO" : "COLABORADOR"}.
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* PAGE 2+: ATTACHED PDF PAGES */}
-                {attachedFiles.map((file) =>
-                    file.pages.map((pageDataUrl, pageIdx) => (
-                        <div
-                            key={`${file.id}-${pageIdx}`}
-                            className="print:w-full print:h-screen print:relative print:flex print:items-center print:justify-center print:overflow-hidden bg-white p-0"
-                            style={{ breakAfter: "page", pageBreakAfter: "always" }}
-                        >
-                            <img src={pageDataUrl} className="w-full h-full object-contain" alt={`${file.name} - Página ${pageIdx + 1}`} />
-                        </div>
-                    ))
-                )}
+                {attachedFiles.map((file, fileIdx) => {
+                    const isLastFile = fileIdx === attachedFiles.length - 1;
+                    return file.pages.map((page, pageIdx) => {
+                        const isLastPageOfFile = pageIdx === file.pages.length - 1;
+                        const isAbsoluteLast = isLastFile && isLastPageOfFile;
+                        return (
+                            <div
+                                key={`${file.id}-${pageIdx}`}
+                                className={`print:w-full print:h-screen print:relative print:flex print:items-center print:justify-center print:overflow-hidden bg-white p-0 ${page.isLandscape ? 'print-landscape' : ''}`}
+                                style={isAbsoluteLast ? undefined : { breakAfter: "page", pageBreakAfter: "always" }}
+                            >
+                                <img src={page.dataUrl} className="w-full h-full object-contain" alt={`${file.name} - Página ${pageIdx + 1}`} />
+                            </div>
+                        );
+                    });
+                })}
             </div>
         </div>
     );

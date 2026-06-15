@@ -32,12 +32,7 @@ export default function Home() {
 
       // Calcular estatísticas com base nos dados do Firestore
       const total = list.length;
-      const pending = list.filter(t => t.status === "Aguardando pagamento" || t.status === "Em andamento").length;
-      const finalized = list.filter(t => t.status === "Finalizada").length;
-      const delayed = list.filter(t => t.status === "Atrasada").length;
-      const upcoming = list.filter(t => t.status === "Aguardando pagamento").length;
-
-      setStats({ total, pending, finalized, delayed, upcoming });
+      setStats({ total, pending: 0, finalized: 0, delayed: 0, upcoming: 0 });
     });
 
     return () => unsubscribe();

@@ -51,7 +51,15 @@ body {
 
 @media print {
   @page {
+    size: portrait;
     margin: 0;
+  }
+  @page landscape-page {
+    size: landscape;
+    margin: 0;
+  }
+  .print-landscape {
+    page: landscape-page;
   }
 
   /* Reset html and body constraints to allow natural multi-page flow */
