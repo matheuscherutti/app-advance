@@ -52,6 +52,8 @@ const getModalityWarningText = (modality: string) => {
 interface PageData {
     dataUrl: string;
     isLandscape: boolean;
+    width: number;
+    height: number;
 }
 
 interface AttachedFile {
@@ -321,8 +323,11 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                                 }).promise;
 
                                 const dataUrl = canvas.toDataURL("image/png");
-                                const isLandscape = viewport.width > viewport.height;
-                                renderedPages.push({ dataUrl, isLandscape });
+                                const originalViewport = page.getViewport({ scale: 1.0 });
+                                const width = originalViewport.width || 595;
+                                const height = originalViewport.height || 842;
+                                const isLandscape = width > height;
+                                renderedPages.push({ dataUrl, isLandscape, width, height });
                             }
                             resolve(renderedPages);
                         } catch (err) {
@@ -1029,13 +1034,52 @@ export default function NewTerminationModal({ onClose }: ModalProps) {
                     return file.pages.map((page, pageIdx) => {
                         const isLastPageOfFile = pageIdx === file.pages.length - 1;
                         const isAbsoluteLast = isLastFile && isLastPageOfFile;
+                        const pageClassName = `print-page-${file.id}-${pageIdx}`;
+                        const namedPageName = `page-size-${file.id}-${pageIdx}`;
                         return (
-                            <div
-                                key={`${file.id}-${pageIdx}`}
-                                className={`print-page print:relative print:flex print:items-center print:justify-center bg-white p-0 ${page.isLandscape ? 'print-landscape' : ''}`}
-                                style={isAbsoluteLast ? undefined : { breakAfter: "page", pageBreakAfter: "always" }}
-                            >
-                                <img src={page.dataUrl} className="w-full h-full object-contain" alt={`${file.name} - Página ${pageIdx + 1}`} />
+                            <div key={`${file.id}-${pageIdx}`}>
+                                <style dangerouslySetInnerHTML={{ __html: `
+                                    @media print {
+                                        @page ${namedPageName} {
+                                            size: ${page.width}pt ${page.height}pt;
+                                            margin: 0 !important;
+                                        }
+                                        .${pageClassName} {
+                                            page: ${namedPageName};
+                                            width: ${page.width}pt !important;
+                                            height: ${page.height}pt !important;
+                                            max-width: ${page.width}pt !important;
+                                            max-height: ${page.height}pt !important;
+                                            min-width: ${page.width}pt !important;
+                                            min-height: ${page.height}pt !important;
+                                            margin: 0 !important;
+                                            padding: 0 !important;
+                                            box-sizing: border-box !important;
+                                            display: block !important;
+                                            position: relative !important;
+                                            overflow: hidden !important;
+                                            break-inside: avoid !important;
+                                            page-break-inside: avoid !important;
+                                        }
+                                    }
+                                `}} />
+                                <div
+                                    className={`${pageClassName} bg-white p-0`}
+                                    style={isAbsoluteLast ? undefined : { breakAfter: "page", pageBreakAfter: "always" }}
+                                >
+                                    <img 
+                                        src={page.dataUrl} 
+                                        className="w-full h-full object-fill" 
+                                        style={{ 
+                                            width: "100%", 
+                                            height: "100%", 
+                                            display: "block",
+                                            margin: 0, 
+                                            padding: 0 
+                                        }} 
+                                        alt={`${file.name} - Página ${pageIdx + 1}`} 
+                                    />
+                                </div>
                             </div>
                         );
                     });
